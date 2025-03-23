@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firetruck Interactive Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .nav-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 5px 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 100;
+            position: absolute;
+            top: 0;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .nav-button {
+            background-color: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            color: #fff;
+            padding: 6px 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .nav-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-button.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+        }
+        
+        .video-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1;
+        }
+        
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: #000;
+        }
+        
+        .fullscreen-button {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container">
+        <video id="videoPlayer" controls autoplay>
+            <source src="cabin.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+    
+    <div class="nav-container">
+        <div class="nav-buttons">
+            <button class="nav-button active" data-video="cabin">Cabin</button>
+            <button class="nav-button" data-video="drafting">Drafting</button>
+            <button class="nav-button" data-video="exterior">Exterior</button>
+            <button class="nav-button" data-video="master-stream">Master Stream</button>
+            <button class="nav-button" data-video="pump">Pump</button>
+            <button class="nav-button" data-video="pump-panel">Pump Panel</button>
+            <button class="nav-button" data-video="rear-storage">Rear Storage</button>
+            <button class="nav-button" data-video="water-tank">Water Tank</button>
+        </div>
+    </div>
+    
+    <button class="fullscreen-button" id="fullscreenBtn">Fullscreen</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const buttons = document.querySelectorAll('.nav-button');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            
+            // Function to change video
+            function changeVideo(videoName) {
+                // Get current time to add to URL to prevent caching
+                const timestamp = new Date().getTime();
+                
+                // Pause current video
+                videoPlayer.pause();
+                
+                // Update source with timestamp to prevent caching
+                videoPlayer.innerHTML = `
+                    <source src="${videoName}.mp4?t=${timestamp}" type="video/mp4">
+                    Your browser does not support the video tag.
+                `;
+                
+                // Load and play the new video
+                videoPlayer.load();
+                
+                // Play after a short delay to ensure loading
+                setTimeout(() => {
+                    const playPromise = videoPlayer.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log('Auto-play was prevented:', error);
+                            // User interaction needed to play video
+                        });
+                    }
+                }, 100);
+            }
+            
+            // Add click event to buttons
+            buttons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remove active class from all buttons
+                    buttons.forEach(btn => btn.classList.remove('active'));
+                    
+                    // Add active class to clicked button
+                    this.classList.add('active');
+                    
+                    // Change video
+                    const videoName = this.getAttribute('data-video');
+                    changeVideo(videoName);
+                });
+            });
+            
+            // Fullscreen functionality
+            fullscreenBtn.addEventListener('click', function() {
+                if (videoPlayer.requestFullscreen) {
+                    videoPlayer.requestFullscreen();
+                } else if (videoPlayer.webkitRequestFullscreen) { /* Safari */
+                    videoPlayer.webkitRequestFullscreen();
+                } else if (videoPlayer.msRequestFullscreen) { /* IE11 */
+                    videoPlayer.msRequestFullscreen();
+                }
+            });
+            
+            // Auto-hide controls after 2 seconds of inactivity
+            let timeout;
+            function hideControls() {
+                document.querySelector('.nav-container').style.opacity = '0';
+                document.querySelector('.fullscreen-button').style.opacity = '0';
+            }
+            
+            function showControls() {
+                document.querySelector('.nav-container').style.opacity = '1';
+                document.querySelector('.fullscreen-button').style.opacity = '1';
+                
+                clearTimeout(timeout);
+                timeout = setTimeout(hideControls, 2000);
+            }
+            
+            document.addEventListener('mousemove', showControls);
+            document.addEventListener('click', showControls);
+            
+            // Initialize with timeout
+            timeout = setTimeout(hideControls, 2000);
+        });
+    </script>
+</body>
+</html>
